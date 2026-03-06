@@ -31,6 +31,7 @@
 // - sonar-token  : Secret text — SonarQube token
 // - docker       : Username/Password — DockerHub credentials
 // - github       : Secret text — GitHub Personal Access Token
+// - nvd-api-key  : Secret text — NVD API Key (https://nvd.nist.gov/developers/request-an-api-key)
 // ====================================================================
 
 pipeline {
@@ -85,7 +86,9 @@ pipeline {
         stage('OWASP Dependency-Check Scan') {
             steps {
                 dir('game-project') {
-                    dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                    withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+                        dependencyCheck additionalArguments: "--scan ./ --disableYarnAudit --disableNodeAudit --nvdApiKey ${NVD_API_KEY}", odcInstallation: 'DP-Check'
+                    }
                     dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
                 }
             }
