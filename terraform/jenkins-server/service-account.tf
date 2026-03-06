@@ -44,16 +44,17 @@ resource "google_service_account" "jenkins_sa" {
 # Ở GCP:     Gán TỪNG role cụ thể (principle of least privilege)
 #
 # BẢNG QUYỀN:
-# ┌────────────────────────────────┬────────────────────────────────────────────┐
-# │ Role                           │ Cho phép làm gì                          │
-# ├────────────────────────────────┼────────────────────────────────────────────┤
-# │ roles/compute.admin            │ Tạo/xóa/sửa VM, disk, network           │
-# │ roles/container.admin          │ Tạo/xóa/sửa GKE cluster                 │
-# │ roles/iam.serviceAccountUser   │ SỬ DỤNG SA khác (cần khi tạo VM/GKE)    │
-# │ roles/iam.serviceAccountAdmin  │ TẠO/XÓA/SỬA SA (cần tạo GKE Node SA)   │
-# │ roles/storage.admin            │ Đọc/ghi GCS bucket (Terraform state)     │
-# │ roles/artifactregistry.admin   │ Push/pull Docker images (nếu dùng)       │
-# └────────────────────────────────┴────────────────────────────────────────────┘
+# ┌──────────────────────────────────────────┬──────────────────────────────────────────────┐
+# │ Role                                     │ Cho phép làm gì                              │
+# ├──────────────────────────────────────────┼──────────────────────────────────────────────┤
+# │ roles/compute.admin                      │ Tạo/xóa/sửa VM, disk, network               │
+# │ roles/container.admin                    │ Tạo/xóa/sửa GKE cluster                     │
+# │ roles/iam.serviceAccountUser             │ SỬ DỤNG SA khác (cần khi tạo VM/GKE)        │
+# │ roles/iam.serviceAccountAdmin            │ TẠO/XÓA/SỬA SA (cần tạo GKE Node SA)       │
+# │ roles/storage.admin                      │ Đọc/ghi GCS bucket (Terraform state)         │
+# │ roles/artifactregistry.admin             │ Push/pull Docker images (nếu dùng)           │
+# │ roles/resourcemanager.projectIamAdmin    │ GÁN roles cho SA khác (IAM bindings)         │
+# └──────────────────────────────────────────┴──────────────────────────────────────────────┘
 
 # --- Role 1: Compute Admin ---
 # Jenkins cần quyền này để: quản lý VM, tạo thêm instance nếu cần
@@ -103,5 +104,15 @@ resource "google_project_iam_member" "jenkins_artifact_admin" {
 resource "google_project_iam_member" "jenkins_sa_admin" {
   project = var.project_id
   role    = "roles/iam.serviceAccountAdmin"
+  member  = "serviceAccount:${google_service_account.jenkins_sa.email}"
+}
+
+# --- Role 7: Project IAM Admin ---
+# Jenkins cần quyền này để: GÁN roles cho SA khác (ví dụ: gán roles cho GKE Node SA)
+# Quyền cần: resourcemanager.projects.getIamPolicy + setIamPolicy
+# Dùng khi Terraform chạy google_project_iam_member cho GKE node SA
+resource "google_project_iam_member" "jenkins_project_iam_admin" {
+  project = var.project_id
+  role    = "roles/resourcemanager.projectIamAdmin"
   member  = "serviceAccount:${google_service_account.jenkins_sa.email}"
 }
