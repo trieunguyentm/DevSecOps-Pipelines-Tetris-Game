@@ -1,0 +1,455 @@
+/* ===== Reset & Base ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background: linear-gradient(135deg, #0a1628 0%, #0d2137 40%, #0a2a1a 100%);
+  font-family: 'Inter', sans-serif;
+  color: #e0e0e0;
+  overflow: hidden;
+}
+
+/* ===== App Layout ===== */
+.app {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* ===== Game Container ===== */
+.game-container {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* ===== Board ===== */
+.game-board-wrapper {
+  position: relative;
+  border: 3px solid rgba(0, 220, 180, 0.5);
+  border-radius: 8px;
+  box-shadow:
+    0 0 20px rgba(0, 220, 180, 0.2),
+    inset 0 0 20px rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+}
+
+.board {
+  display: grid;
+  gap: 1px;
+  padding: 2px;
+  background: rgba(10, 30, 20, 0.4);
+}
+
+/* ===== Cell ===== */
+.cell {
+  width: 30px;
+  height: 30px;
+  border-radius: 3px;
+  background: rgba(10, 25, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background 0.05s ease;
+}
+
+/* Tetromino Colors - V2 neon variant */
+.tetromino-I {
+  background: linear-gradient(135deg, #00f0f0, #00b8d4);
+  border: 1px solid rgba(0, 240, 240, 0.6);
+  box-shadow: inset 0 0 10px rgba(0, 240, 240, 0.5), 0 0 6px rgba(0, 240, 240, 0.3);
+}
+
+.tetromino-J {
+  background: linear-gradient(135deg, #448aff, #2962ff);
+  border: 1px solid rgba(68, 138, 255, 0.6);
+  box-shadow: inset 0 0 10px rgba(68, 138, 255, 0.5), 0 0 6px rgba(68, 138, 255, 0.3);
+}
+
+.tetromino-L {
+  background: linear-gradient(135deg, #ffab40, #ff9100);
+  border: 1px solid rgba(255, 171, 64, 0.6);
+  box-shadow: inset 0 0 10px rgba(255, 171, 64, 0.5), 0 0 6px rgba(255, 171, 64, 0.3);
+}
+
+.tetromino-O {
+  background: linear-gradient(135deg, #ffff00, #ffd600);
+  border: 1px solid rgba(255, 255, 0, 0.6);
+  box-shadow: inset 0 0 10px rgba(255, 255, 0, 0.5), 0 0 6px rgba(255, 255, 0, 0.3);
+}
+
+.tetromino-S {
+  background: linear-gradient(135deg, #69f0ae, #00e676);
+  border: 1px solid rgba(105, 240, 174, 0.6);
+  box-shadow: inset 0 0 10px rgba(105, 240, 174, 0.5), 0 0 6px rgba(105, 240, 174, 0.3);
+}
+
+.tetromino-T {
+  background: linear-gradient(135deg, #e040fb, #d500f9);
+  border: 1px solid rgba(224, 64, 251, 0.6);
+  box-shadow: inset 0 0 10px rgba(224, 64, 251, 0.5), 0 0 6px rgba(224, 64, 251, 0.3);
+}
+
+.tetromino-Z {
+  background: linear-gradient(135deg, #ff5252, #ff1744);
+  border: 1px solid rgba(255, 82, 82, 0.6);
+  box-shadow: inset 0 0 10px rgba(255, 82, 82, 0.5), 0 0 6px rgba(255, 82, 82, 0.3);
+}
+
+/* Ghost Piece */
+.ghost {
+  opacity: 0.25;
+  box-shadow: none;
+}
+
+/* ===== Panels ===== */
+.game-left-panel,
+.game-right-panel {
+  min-width: 160px;
+}
+
+/* ===== Game Stats ===== */
+.game-stats {
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(0, 220, 180, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.stat-item:last-child {
+  margin-bottom: 0;
+}
+
+.stat-label {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 10px;
+  color: #80cbc4;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 16px;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(0, 220, 180, 0.6);
+}
+
+.high-score {
+  color: #ffd740;
+  text-shadow: 0 0 10px rgba(255, 215, 64, 0.5);
+  font-size: 13px;
+}
+
+.combo-indicator {
+  animation: comboPulse 0.5s ease-in-out;
+}
+
+.combo-value {
+  color: #69f0ae;
+  text-shadow: 0 0 12px rgba(105, 240, 174, 0.8);
+}
+
+@keyframes comboPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* ===== Controls Info ===== */
+.controls-info {
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(0, 220, 180, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.controls-info h3 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 10px;
+  color: #80cbc4;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.control-item {
+  font-size: 12px;
+  color: #b0bec5;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-item .key {
+  display: inline-block;
+  background: rgba(0, 220, 180, 0.2);
+  border: 1px solid rgba(0, 220, 180, 0.4);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 8px;
+  color: #fff;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* ===== Hold Piece ===== */
+.hold-piece-container {
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(0, 220, 180, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: opacity 0.2s ease;
+}
+
+.hold-piece-container.hold-used {
+  opacity: 0.5;
+}
+
+.hold-piece-container h3 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 10px;
+  color: #80cbc4;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.hold-piece-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  background: rgba(10, 30, 20, 0.5);
+  border-radius: 4px;
+  min-height: 50px;
+}
+
+.hold-empty {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 14px;
+  color: rgba(0, 220, 180, 0.3);
+}
+
+/* ===== Next Piece ===== */
+.next-piece-container {
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(0, 220, 180, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.next-piece-container h3 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 10px;
+  color: #80cbc4;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.next-piece-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  margin-bottom: 8px;
+  background: rgba(10, 30, 20, 0.5);
+  border-radius: 4px;
+}
+
+.next-piece-preview:last-child {
+  margin-bottom: 0;
+}
+
+.mini-board {
+  display: grid;
+  gap: 1px;
+}
+
+.mini-cell {
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  background: transparent;
+}
+
+/* ===== Version Badge ===== */
+.version-badge {
+  display: inline-block;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  color: #0a1628;
+  background: linear-gradient(135deg, #00dcb4, #69f0ae);
+  padding: 4px 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+}
+
+/* ===== New Record ===== */
+.new-record {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 14px;
+  color: #ffd740;
+  text-shadow: 0 0 20px rgba(255, 215, 64, 0.8);
+  margin-top: 8px;
+  margin-bottom: 8px;
+  animation: recordBlink 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes recordBlink {
+  from { opacity: 1; }
+  to { opacity: 0.4; }
+}
+
+/* ===== Overlays ===== */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+}
+
+.overlay-content {
+  text-align: center;
+  padding: 32px;
+}
+
+.game-title {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 32px;
+  color: #fff;
+  text-shadow:
+    0 0 20px rgba(0, 220, 180, 0.8),
+    0 0 40px rgba(0, 220, 180, 0.4);
+  margin-bottom: 8px;
+  letter-spacing: 4px;
+  animation: titleGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+  from {
+    text-shadow:
+      0 0 20px rgba(0, 220, 180, 0.8),
+      0 0 40px rgba(0, 220, 180, 0.4);
+  }
+  to {
+    text-shadow:
+      0 0 30px rgba(105, 240, 174, 0.8),
+      0 0 60px rgba(105, 240, 174, 0.4);
+  }
+}
+
+.gameover-title {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 24px;
+  color: #ff5252;
+  text-shadow: 0 0 20px rgba(255, 82, 82, 0.6);
+  margin-bottom: 20px;
+  letter-spacing: 3px;
+}
+
+.paused-title {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 24px;
+  color: #ffd740;
+  text-shadow: 0 0 20px rgba(255, 215, 64, 0.6);
+  margin-bottom: 20px;
+  letter-spacing: 3px;
+}
+
+.overlay-text {
+  font-size: 13px;
+  color: #80cbc4;
+  margin-bottom: 20px;
+}
+
+.final-score {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  color: #e0e0e0;
+  margin-bottom: 10px;
+}
+
+.btn-start {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  padding: 14px 28px;
+  margin-top: 16px;
+  background: linear-gradient(135deg, rgba(0, 220, 180, 0.6), rgba(0, 150, 120, 0.6));
+  color: #fff;
+  border: 2px solid rgba(0, 220, 180, 0.7);
+  border-radius: 8px;
+  cursor: pointer;
+  letter-spacing: 2px;
+  transition: all 0.2s ease;
+  text-shadow: 0 0 8px rgba(0, 220, 180, 0.6);
+}
+
+.btn-start:hover {
+  background: linear-gradient(135deg, rgba(0, 240, 200, 0.8), rgba(0, 180, 140, 0.8));
+  box-shadow: 0 0 20px rgba(0, 220, 180, 0.5);
+  transform: scale(1.05);
+}
+
+.btn-start:active {
+  transform: scale(0.98);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .game-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .game-left-panel {
+    display: flex;
+    gap: 16px;
+    min-width: auto;
+  }
+
+  .game-stats {
+    margin-bottom: 0;
+  }
+
+  .cell {
+    width: 24px;
+    height: 24px;
+  }
+
+  .game-title {
+    font-size: 24px;
+  }
+}

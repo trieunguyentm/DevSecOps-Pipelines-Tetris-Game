@@ -4,6 +4,8 @@
 # Only keep these directories
 !game-project/
 !game-project/**
+!game-project-v2/
+!game-project-v2/**
 !jenkins-pipelines/
 !jenkins-pipelines/**
 !terraform/

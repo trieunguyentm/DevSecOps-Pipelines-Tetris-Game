@@ -1,5 +1,5 @@
 // ====================================================================
-// JENKINSFILE - TETRIS V1 CI/CD PIPELINE (GCP Version)
+// JENKINSFILE - TETRIS V2 CI/CD PIPELINE (GCP Version)
 // ====================================================================
 //
 // Pipeline này thực hiện:
@@ -14,24 +14,22 @@
 // 9. Update deployment manifest (cập nhật image tag trên GitHub)
 //    → ArgoCD tự detect thay đổi → deploy lên GKE
 //
-// SO SÁNH AWS vs GCP:
+// SO SÁNH V1 vs V2:
 // ┌─────────────────┬──────────────────────────┬──────────────────────────┐
-// │ Thành phần       │ AWS (gốc)                │ GCP (chuyển đổi)         │
+// │ Thành phần       │ V1                       │ V2                       │
 // ├─────────────────┼──────────────────────────┼──────────────────────────┤
-// │ Source code path │ Tetris-V1/               │ game-project/            │
-// │ Docker image     │ avian19/tetrisv1         │ trieunguyentm/tetrisv1   │
-// │ Container port   │ 3000 (Node.js direct)    │ 80 (Nginx)               │
-// │ Git branch       │ master                   │ main                     │
-// │ Manifest path    │ Manifest-file/           │ manifest-file/           │
-// │ SonarQube/OWASP │ Giống nhau               │ Giống nhau               │
-// │ Trivy            │ Giống nhau               │ Giống nhau               │
+// │ Source code path │ game-project/            │ game-project-v2/         │
+// │ Docker image     │ trieunguyentm/tetrisv1   │ trieunguyentm/tetrisv2   │
+// │ SonarQube key   │ TetrisV1                 │ TetrisV2                 │
+// │ Container port   │ 80 (Nginx)               │ 80 (Nginx)               │
+// │ Pipeline stages  │ Giống nhau               │ Giống nhau               │
 // └─────────────────┴──────────────────────────┴──────────────────────────┘
 //
-// CREDENTIALS CẦN CẤU HÌNH TRONG JENKINS:
+// CREDENTIALS CẦN CẤU HÌNH TRONG JENKINS (đã có từ Step 7):
 // - sonar-token  : Secret text — SonarQube token
 // - docker       : Username/Password — DockerHub credentials
 // - github       : Secret text — GitHub Personal Access Token
-// - nvd-api-key  : Secret text — NVD API Key (https://nvd.nist.gov/developers/request-an-api-key)
+// - nvd-api-key  : Secret text — NVD API Key
 // ====================================================================
 
 pipeline {
@@ -57,11 +55,11 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                dir('game-project') {
+                dir('game-project-v2') {
                     withSonarQubeEnv('sonar-scanner') {
                         sh ''' $SCANNER_HOME/bin/sonar-scanner \
-                            -Dsonar.projectName=TetrisV1 \
-                            -Dsonar.projectKey=TetrisV1 '''
+                            -Dsonar.projectName=TetrisV2 \
+                            -Dsonar.projectKey=TetrisV2 '''
                     }
                 }
             }
@@ -77,7 +75,7 @@ pipeline {
 
         stage('Installing Dependencies') {
             steps {
-                dir('game-project') {
+                dir('game-project-v2') {
                     sh 'npm install'
                 }
             }
@@ -85,7 +83,7 @@ pipeline {
 
         stage('OWASP Dependency-Check Scan') {
             steps {
-                dir('game-project') {
+                dir('game-project-v2') {
                     withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
                         dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit --nvdApiKey ' + NVD_API_KEY, odcInstallation: 'DP-Check'
                     }
@@ -96,7 +94,7 @@ pipeline {
 
         stage('Trivy File Scan') {
             steps {
-                dir('game-project') {
+                dir('game-project-v2') {
                     sh 'trivy fs . > trivyfs.txt'
                 }
             }
@@ -105,10 +103,10 @@ pipeline {
         stage('Docker Image Build') {
             steps {
                 script {
-                    dir('game-project') {
+                    dir('game-project-v2') {
                         withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
                             sh 'docker system prune -f'
-                            sh 'docker build -t tetrisv1 .'
+                            sh 'docker build -t tetrisv2 .'
                         }
                     }
                 }
@@ -119,8 +117,8 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
-                        sh 'docker tag tetrisv1 trieunguyentm/tetrisv1:${BUILD_NUMBER}'
-                        sh 'docker push trieunguyentm/tetrisv1:${BUILD_NUMBER}'
+                        sh 'docker tag tetrisv2 trieunguyentm/tetrisv2:${BUILD_NUMBER}'
+                        sh 'docker push trieunguyentm/tetrisv2:${BUILD_NUMBER}'
                     }
                 }
             }
@@ -128,7 +126,7 @@ pipeline {
 
         stage('Trivy Image Scan') {
             steps {
-                sh 'trivy image trieunguyentm/tetrisv1:${BUILD_NUMBER} > trivyimage.txt'
+                sh 'trivy image trieunguyentm/tetrisv2:${BUILD_NUMBER} > trivyimage.txt'
             }
         }
 
@@ -151,11 +149,9 @@ pipeline {
                             git config user.name "trieunguyentm"
                             BUILD_NUMBER=${BUILD_NUMBER}
                             echo $BUILD_NUMBER
-                            imageTag=$(grep -oP '(?<=tetrisv1:)[^ ]+' deployment-service.yml)
-                            echo $imageTag
-                            sed -i "s/tetrisv1:${imageTag}/tetrisv1:${BUILD_NUMBER}/" deployment-service.yml
+                            sed -i "s|image: trieunguyentm/.*|image: trieunguyentm/tetrisv2:${BUILD_NUMBER}|" deployment-service.yml
                             git add deployment-service.yml
-                            git commit -m "Update deployment Image to version ${BUILD_NUMBER}"
+                            git commit -m "Update deployment to Tetris V2 version ${BUILD_NUMBER}"
                             git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
                         '''
                     }
@@ -165,11 +161,11 @@ pipeline {
     }
     post {
         success {
-            echo 'Tetris V1 CI/CD Pipeline completed successfully!'
+            echo 'Tetris V2 CI/CD Pipeline completed successfully!'
             echo 'ArgoCD will auto-sync the new deployment to GKE cluster.'
         }
         failure {
-            echo 'Tetris V1 Pipeline failed! Check console output for details.'
+            echo 'Tetris V2 Pipeline failed! Check console output for details.'
         }
     }
 }
