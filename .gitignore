@@ -24,3 +24,7 @@ build/
 *.tfstate.backup
 *.tfplan
 crash.log
+
+# Keep manifest files
+!manifest-file/
+!manifest-file/**
