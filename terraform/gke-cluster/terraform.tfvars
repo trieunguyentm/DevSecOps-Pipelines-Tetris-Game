@@ -1,0 +1,15 @@
+project_id         = "tetris-react-game-on-gcp"
+region             = "asia-southeast1"
+zone               = "asia-southeast1-a"
+vpc_name           = "jenkins-vpc"
+gke_subnet_name    = "gke-subnet"
+gke_subnet_cidr    = "10.0.2.0/24"
+gke_pods_cidr      = "10.1.0.0/16"
+gke_services_cidr  = "10.2.0.0/16"
+cluster_name       = "tetris-gke-cluster"
+node_machine_type  = "e2-medium"
+node_disk_size     = 20
+node_count         = 2
+node_min_count     = 1
+node_max_count     = 3
+gke_sa_id          = "gke-node-sa"

@@ -1,0 +1,113 @@
+// ==============================================================================
+// Jenkinsfile: Triển khai GKE Cluster bằng Terraform
+// ==============================================================================
+//
+// SO SÁNH VỚI AWS:
+//   AWS gốc: Dùng withAWS(credentials: 'aws-key') wrapper cho MỌI stage
+//   GCP:     KHÔNG CẦN credentials wrapper!
+//            → Jenkins VM đã có Service Account attached (jenkins-vm-sa)
+//            → SA có roles/container.admin → tự động có quyền tạo GKE
+//
+// PARAMETERS:
+//   - Terraform-Action: plan / apply / destroy
+//     + plan:    Chỉ xem trước, không tạo gì
+//     + apply:   Tạo GKE cluster thật
+//     + destroy: Xóa GKE cluster
+// ==============================================================================
+
+properties([
+    parameters([
+        choice(
+            choices: ['plan', 'apply', 'destroy'],
+            description: 'Chọn Terraform action: plan (xem trước), apply (tạo), destroy (xóa)',
+            name: 'Terraform-Action'
+        )
+    ])
+])
+
+pipeline {
+    agent any
+
+    environment {
+        // Thư mục chứa Terraform code cho GKE
+        TF_DIR = 'terraform/gke-cluster'
+    }
+
+    stages {
+        stage('Checkout from Git') {
+            steps {
+                // Clone repo chứa Terraform code
+                // ⚠️ Thay URL bằng repo thực tế của bạn
+                git branch: 'main', url: 'https://github.com/YOUR_USERNAME/YOUR_REPO.git'
+            }
+        }
+
+        stage('Initializing Terraform') {
+            steps {
+                // AWS gốc: withAWS(credentials: 'aws-key', region: 'us-east-1') { ... }
+                // GCP:     Không cần wrapper — SA tự xác thực
+                dir("${TF_DIR}") {
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Validate Terraform Code') {
+            steps {
+                dir("${TF_DIR}") {
+                    sh 'terraform validate'
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                dir("${TF_DIR}") {
+                    sh 'terraform plan'
+                }
+            }
+        }
+
+        stage('Terraform Action') {
+            steps {
+                script {
+                    dir("${TF_DIR}") {
+                        if (params.'Terraform-Action' == 'plan') {
+                            sh 'terraform plan'
+                        } else if (params.'Terraform-Action' == 'apply') {
+                            sh 'terraform apply -auto-approve'
+                        } else if (params.'Terraform-Action' == 'destroy') {
+                            sh 'terraform destroy -auto-approve'
+                        } else {
+                            error "Invalid Terraform action: ${params.'Terraform-Action'}"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Configure kubectl') {
+            when {
+                expression { params.'Terraform-Action' == 'apply' }
+            }
+            steps {
+                // Tương đương AWS: aws eks update-kubeconfig --region us-east-1 --name Tetris-EKS-Cluster
+                sh '''
+                    gcloud container clusters get-credentials tetris-gke-cluster \
+                        --region asia-southeast1 \
+                        --project tetris-react-game-on-gcp
+                '''
+                sh 'kubectl get nodes'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'GKE Terraform pipeline completed successfully!'
+        }
+        failure {
+            echo 'GKE Terraform pipeline failed! Check console output for details.'
+        }
+    }
+}

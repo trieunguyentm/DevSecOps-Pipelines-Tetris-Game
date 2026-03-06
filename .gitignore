@@ -1,0 +1,26 @@
+# Ignore everything
+*
+
+# Only keep these directories
+!game-project/
+!game-project/**
+!jenkins-pipelines/
+!jenkins-pipelines/**
+!terraform/
+!terraform/**
+
+# Keep this .gitignore
+!.gitignore
+
+# ===== Common ignores within kept directories =====
+
+# Node.js
+node_modules/
+build/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+crash.log

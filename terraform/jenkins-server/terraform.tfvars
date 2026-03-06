@@ -1,0 +1,11 @@
+project_id         = "tetris-react-game-on-gcp"
+region             = "asia-southeast1"
+zone               = "asia-southeast1-a"
+instance_name      = "jenkins-server"
+machine_type       = "e2-standard-8"
+disk_size          = 30
+vpc_name           = "jenkins-vpc"
+subnet_name        = "jenkins-subnet"
+subnet_cidr        = "10.0.1.0/24"
+firewall_name      = "jenkins-allow-ports"
+service_account_id = "jenkins-vm-sa"
