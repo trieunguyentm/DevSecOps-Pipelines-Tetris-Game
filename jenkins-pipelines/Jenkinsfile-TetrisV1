@@ -1,0 +1,172 @@
+// ====================================================================
+// JENKINSFILE - TETRIS V1 CI/CD PIPELINE (GCP Version)
+// ====================================================================
+//
+// Pipeline này thực hiện:
+// 1. Checkout source code từ GitHub
+// 2. SonarQube analysis (kiểm tra chất lượng code)
+// 3. Quality Gate check
+// 4. Install dependencies (npm install)
+// 5. OWASP Dependency-Check (kiểm tra thư viện có lỗ hổng)
+// 6. Trivy file scan (quét lỗ hổng trong source code)
+// 7. Docker build + push to DockerHub
+// 8. Trivy image scan (quét lỗ hổng trong Docker image)
+// 9. Update deployment manifest (cập nhật image tag trên GitHub)
+//    → ArgoCD tự detect thay đổi → deploy lên GKE
+//
+// SO SÁNH AWS vs GCP:
+// ┌─────────────────┬──────────────────────────┬──────────────────────────┐
+// │ Thành phần       │ AWS (gốc)                │ GCP (chuyển đổi)         │
+// ├─────────────────┼──────────────────────────┼──────────────────────────┤
+// │ Source code path │ Tetris-V1/               │ game-project/            │
+// │ Docker image     │ avian19/tetrisv1         │ trieunguyentm/tetrisv1   │
+// │ Container port   │ 3000 (Node.js direct)    │ 80 (Nginx)               │
+// │ Git branch       │ master                   │ main                     │
+// │ Manifest path    │ Manifest-file/           │ manifest-file/           │
+// │ SonarQube/OWASP │ Giống nhau               │ Giống nhau               │
+// │ Trivy            │ Giống nhau               │ Giống nhau               │
+// └─────────────────┴──────────────────────────┴──────────────────────────┘
+//
+// CREDENTIALS CẦN CẤU HÌNH TRONG JENKINS:
+// - sonar-token  : Secret text — SonarQube token
+// - docker       : Username/Password — DockerHub credentials
+// - github       : Secret text — GitHub Personal Access Token
+// ====================================================================
+
+pipeline {
+    agent any
+    tools {
+        nodejs 'nodejs'
+    }
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
+    }
+    stages {
+        stage('Cleaning Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage('Checkout from Git') {
+            steps {
+                git branch: 'main', url: 'https://github.com/trieunguyentm/DevSecOps-Pipelines-Tetris-Game.git'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                dir('game-project') {
+                    withSonarQubeEnv('sonar-scanner') {
+                        sh ''' $SCANNER_HOME/bin/sonar-scanner \
+                            -Dsonar.projectName=TetrisV1 \
+                            -Dsonar.projectKey=TetrisV1 '''
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+                }
+            }
+        }
+
+        stage('Installing Dependencies') {
+            steps {
+                dir('game-project') {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('OWASP Dependency-Check Scan') {
+            steps {
+                dir('game-project') {
+                    dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                }
+            }
+        }
+
+        stage('Trivy File Scan') {
+            steps {
+                dir('game-project') {
+                    sh 'trivy fs . > trivyfs.txt'
+                }
+            }
+        }
+
+        stage('Docker Image Build') {
+            steps {
+                script {
+                    dir('game-project') {
+                        withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                            sh 'docker system prune -f'
+                            sh 'docker build -t tetrisv1 .'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Docker Image Push') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                        sh 'docker tag tetrisv1 trieunguyentm/tetrisv1:${BUILD_NUMBER}'
+                        sh 'docker push trieunguyentm/tetrisv1:${BUILD_NUMBER}'
+                    }
+                }
+            }
+        }
+
+        stage('Trivy Image Scan') {
+            steps {
+                sh 'trivy image trieunguyentm/tetrisv1:${BUILD_NUMBER} > trivyimage.txt'
+            }
+        }
+
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/trieunguyentm/DevSecOps-Pipelines-Tetris-Game.git'
+            }
+        }
+
+        stage('Update Deployment File') {
+            environment {
+                GIT_REPO_NAME = "DevSecOps-Pipelines-Tetris-Game"
+                GIT_USER_NAME = "trieunguyentm"
+            }
+            steps {
+                dir('manifest-file') {
+                    withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+                        sh '''
+                            git config user.email "trieunguyen241102@gmail.com"
+                            git config user.name "trieunguyentm"
+                            BUILD_NUMBER=${BUILD_NUMBER}
+                            echo $BUILD_NUMBER
+                            imageTag=$(grep -oP '(?<=tetrisv1:)[^ ]+' deployment-service.yml)
+                            echo $imageTag
+                            sed -i "s/tetrisv1:${imageTag}/tetrisv1:${BUILD_NUMBER}/" deployment-service.yml
+                            git add deployment-service.yml
+                            git commit -m "Update deployment Image to version ${BUILD_NUMBER}"
+                            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                        '''
+                    }
+                }
+            }
+        }
+    }
+    post {
+        success {
+            echo 'Tetris V1 CI/CD Pipeline completed successfully!'
+            echo 'ArgoCD will auto-sync the new deployment to GKE cluster.'
+        }
+        failure {
+            echo 'Tetris V1 Pipeline failed! Check console output for details.'
+        }
+    }
+}
