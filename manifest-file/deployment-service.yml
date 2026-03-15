@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: tetris
-        image: trieunguyentm/tetrisv1:4
+        image: trieunguyentm/tetrisv2:1
         ports:
         - containerPort: 80
 ---
