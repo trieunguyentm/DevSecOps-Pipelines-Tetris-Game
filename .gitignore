@@ -30,3 +30,6 @@ crash.log
 # Keep manifest files
 !manifest-file/
 !manifest-file/**
+
+# Readme files
+!README.md
