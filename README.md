@@ -14,34 +14,34 @@ This project demonstrates end-to-end DevSecOps practices: Infrastructure as Code
     │  git push      │                │                   │                │
     ├───────────────▶│                │                   │                │
     │                │  Build Now     │                   │                │
-    │                │◀──────────────┤                   │                │
-    │                │  git clone    │                   │                │
-    │                ├──────────────▶│                   │                │
-    │                │               │                   │                │
-    │                │   ┌───────────────────────┐       │                │
-    │                │   │  SECURITY SCANNING    │       │                │
-    │                │   │  1. SonarQube (SAST)  │       │                │
-    │                │   │  2. OWASP (SCA)       │       │                │
-    │                │   │  3. Trivy FS Scan     │       │                │
-    │                │   └───────────────────────┘       │                │
-    │                │               │                   │                │
-    │                │   Docker build + push             │                │
-    │                │               ├──────────────────▶│                │
-    │                │               │                   │                │
-    │                │   ┌───────────────────────┐       │                │
-    │                │   │  4. Trivy Image Scan  │       │                │
-    │                │   └───────────────────────┘       │                │
-    │                │               │                   │                │
-    │                │  Update manifest (git push)       │                │
-    │                │◀──────────────┤                   │                │
-    │                │               │                   │                │
-    │                │  ArgoCD detects change ───────────────────────────▶│
-    │                │               │                   │   kubectl apply│
-    │                │               │                   │◀───────────────┤
-    │                │               │                   │   Pull image   │
-    │                │               │                   │                │
-    │  Access app via LoadBalancer External IP           │                │
-    │◀───────────────────────────────────────────────────────────────────┤
+    │                │◀───────────────┤                   │                │
+    │                │  git clone     │                   │                │
+    │                ├──────────────▶ │                   │                │
+    │                │                │                   │                │
+    │                │   ┌───────────────────────┐        │                │
+    │                │   │  SECURITY SCANNING    │        │                │
+    │                │   │  1. SonarQube (SAST)  │        │                │
+    │                │   │  2. OWASP (SCA)       │        │                │
+    │                │   │  3. Trivy FS Scan     │        │                │
+    │                │   └───────────────────────┘        │                │
+    │                │               │                    │                │
+    │                │   Docker build + push              │                │
+    │                │               ├──────────────────▶ │                │
+    │                │               │                    │                │
+    │                │   ┌───────────────────────┐        │                │
+    │                │   │  4. Trivy Image Scan  │        │                │
+    │                │   └───────────────────────┘        │                │
+    │                │               │                    │                │
+    │                │  Update manifest (git push)        │                │
+    │                │◀──────────────┤                    │                │
+    │                │               │                    │                │
+    │                │  ArgoCD detects change ───────────────────────────▶ │
+    │                │               │                    │   kubectl apply│
+    │                │               │                    │◀───────────────┤
+    │                │               │                    │   Pull image   │
+    │                │               │                    │                │
+    │  Access app via LoadBalancer External IP            │                │
+    │◀───────────────────────────────────────────────────────────────────│
 ```
 
 ---
@@ -80,10 +80,10 @@ Every build passes through **4 security gates** before reaching production:
 │   Scan npm packages for known CVEs in the NVD database      │
 │                                                             │
 │   Layer 3: Filesystem Scan   → Trivy FS                     │
-│   Detect secrets, misconfigurations in source files          │
+│   Detect secrets, misconfigurations in source files         │
 │                                                             │
 │   Layer 4: Image Scan        → Trivy Image                  │
-│   Scan final Docker image for OS and app vulnerabilities     │
+│   Scan final Docker image for OS and app vulnerabilities    │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
